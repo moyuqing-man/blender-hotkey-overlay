@@ -1,0 +1,15 @@
+# Blender
+*.blend
+*.blend1
+*.blend2
+*.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# System
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+schema_version = "1.0.0"
+id = "hotkey_overlay"
+version = "1.5.0"
+name = "Hotkey Overlay"
+tagline = "Realtime key & mouse display + customizable mode hotkey hint"
+maintainer = "Custom"
+type = "add-on"
+blender_version_min = "4.2.0"
+license = ["GPL-3.0-only"]
+description = """
+Realtime key & mouse display + customizable mode hotkey hint, auto save config to blender user folder.
+Located in 3D View → N panel → HotkeyOverlay.
+"""
+category = "3D View"
