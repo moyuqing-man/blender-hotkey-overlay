@@ -1,3 +1,9 @@
+## [1.12.3] - 2026-09-26
+
+### 兼容性收口
+- **最低 Blender 版本明确为 4.2**：扩展包 manifest 早已将 `blender_version_min` 锁为 4.2.0，圆角 SDF shader 依赖 `GPUShaderCreateInfo`（4.0+ API）。本版不再声明支持 Blender 3.6 ~ 4.1 legacy 附加组件形式；`bl_info["blender"]` 同步改为 (4, 2, 0)。
+- README 中英双语删除 legacy 安装段落，统一为 Blender 4.2 ~ 5.x 扩展包安装说明。
+- 无功能变化；v1.12.2 的最近按键块底色独立配色保留。
 ## [1.12.2] - 2026-09-26
 
 ### 新增

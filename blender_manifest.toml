@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "hotkey_overlay"
-version = "1.12.2"
+version = "1.12.3"
 name = "Hotkey Overlay"
 tagline = "Screencast-Keys style key/mouse overlay + rich per-mode hotkey hints + draggable themed hint card"
 maintainer = "Custom"

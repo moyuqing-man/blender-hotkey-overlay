@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# HOTKEY OVERLAY v1.12.0
-# Blender 3.6 ~ 5.2 全兼容（legacy 附加组件 / 4.2+ 扩展包）
+# HOTKEY OVERLAY v1.12.3
+# 仅支持 Blender 4.2 ~ 5.x（扩展包形式，实测 5.2.2 Steam 版）；不再兼容 3.6-4.1 legacy
 # 醒目按键弹出（类 Screen Keys 效果）+ 四模式快捷键提示 + 自动读取用户键位生成提示
 bl_info = {
     "name": "Hotkey Overlay",
     "author": "Custom",
-    "version": (1, 12, 0),
-    "blender": (3, 6, 0),
+    "version": (1, 12, 3),
+    "blender": (4, 2, 0),
     "location": "3D View → N面板 → HotkeyOverlay",
     "description": "Screen-Keys style key/mouse overlay + rich per-mode hotkey hints + auto-generate from user keymap + draggable/collapsible themed hint card",
     "category": "3D View",

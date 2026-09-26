@@ -3,7 +3,7 @@
 > **用途**：本文件是 Blender 快捷键提示插件 `hotkey_overlay` 项目的完整知识沉淀。
 > 另开新项目时，把本文件发给 AI（或让 AI 读取本路径），即可完整继承本项目的所有上下文：代码位置、版本历史、踩坑记录、验证方法与用户偏好。
 >
-> 最终稳定版本：**v1.12.1**（黑色简约浮窗默认 + 拖拽性能优化）。v1.12.0 玻璃拟态：圆角/磨砂/悬浮投影/简约玻璃风预设。
+> 最终稳定版本：**v1.12.3**（黑色简约浮窗默认 + 拖拽性能优化 + 最近按键块底色独立 + 兼容性收口到 Blender 4.2+）。v1.12.0 玻璃拟态：圆角/磨砂/悬浮投影/简约玻璃风预设。
 
 ---
 
@@ -14,8 +14,8 @@
 | 插件名称 | hotkey_overlay（按键/鼠标实时捕获 + 四模式快捷键提示卡 + 最近按键历史渐隐） |
 | 目标软件 | Blender **5.2.2 LTS（Steam 版）**，扩展目录 `...\Blender\5.2\extensions\user_default\hotkey_overlay\` |
 | 开发语言 | Python（Blender 扩展，bpy + gpu 绘制 + blf 文字） |
-| 最终版本 | v1.12.1（三副本 md5 **F9350806C38A0EDF0ABDB7AFE2D7A849**） |
-| 最终安装包 | `C:\Users\29427\Desktop\安装包\hotkey_overlay_v1.12.1.zip`（zip 内前缀 `hotkey_overlay/`，含 blender_manifest.toml + hotkey_overlay.py + __init__.py；v1.9.7~v1.11.4 旧 zip 保留在同目录） |
+| 最终版本 | v1.12.3（bl_info 版本 (1,12,3)，blender min (4,2,0)；三副本 md5 发版后校验） |
+| 最终安装包 | `C:\Users\29427\Desktop\安装包\hotkey_overlay_v1.12.3.zip`（zip 内前缀 `hotkey_overlay/`，含 blender_manifest.toml + hotkey_overlay.py + __init__.py；v1.9.7~v1.12.2 旧 zip 保留在同目录） |
 
 ## 二、关键路径（改代码/发版必用）
 
@@ -68,6 +68,8 @@
 | v1.11.3 | **按键块透明度真正有用**：改为控制键位块整体（背景+文字+描边）透明度，与渐隐叠加（之前只控底色、文字恒亮，调了没变化） |
 | v1.11.4 | **删除 Ctrl 拖拽精细微调**（Blender 5.2 下报错）；位置写入转 int 防浮点 RNA 报错；UI 文字同步删"按住 Ctrl 拖拽 = 精细微调" |
 | **v1.12.1** | **拖拽卡顿修复 + 黑色简约默认配色**：SDF draw ~47/帧→~6/帧（投影并 1 层、键位块/按住块改直角 draw_rect）；默认配色改近黑底+白字+Blender 橙键位，与 Blender 本体一致 |
+| **v1.12.2** | **最近按键块底色独立成可调配色**：新增 `hint_recent_chip_color` 属性（默认 Blender 橙 0.98,0.48,0.10），面板外观区新增「最近按键块底色」色板，与键位文字色分离；随配置保存/加载 |
+| **v1.12.3** | **兼容性收口**：`bl_info["blender"]` 从 (3,6,0) 改为 (4,2,0)；文件头注释与 README 中英双语删除「支持 3.6~4.1 legacy 附加组件」段落，明确仅支持 Blender 4.2 ~ 5.x 扩展包形式（实测 5.2.2 Steam 版）；无功能变化 |
 | **v1.12.0** | **玻璃拟态美化（用户参考"04 玻璃拟态"宣传图）**：全圆角化（卡片 12 / 标题栏 10 / 键位块 4 / 按住行胶囊 / 最近按键 4）；磨砂半透明 + 顶部高光条 + 三层悬浮投影 + 1px 圆角描边；标题栏简约化（淡圆角块+细分隔线）；新增"简约玻璃风"一键预设。**踩坑**：① Blender 5.2 禁止直接实例化 `GPUShader`（`cannot create GPUShader instances`）→ 改用 `GPUShaderCreateInfo` 构建；② manifest TOML 被 PowerShell Set-Content -Encoding UTF8 写入 **BOM** 导致扩展加载报 `Invalid statement (at line 1, column 1)` → 必须 UTF-8 无 BOM（Python 写） |
 
 ## 五、已验证死路（不要再浪费时间重试）
@@ -130,5 +132,7 @@
 
 ---
 
-*文档生成日期：2026-09-23（v1.12.0 追加于 2026-09-24）。当前最终版本 v1.12.0（玻璃拟态）。*
+*文档生成日期：2026-09-23（v1.12.0 追加 2026-09-24；v1.12.1/v1.12.2/v1.12.3 追加 2026-09-26）。当前最终版本 v1.12.3。*
+
+> **兼容声明（v1.12.3 起）**：本插件仅支持 **Blender 4.2 ~ 5.x** 扩展包形式。不再为 Blender 3.6 ~ 4.1 legacy 附加组件形式做兼容声明或构建；圆角 SDF shader 依赖 `GPUShaderCreateInfo`（4.0+ API），扩展 manifest 已锁 `blender_version_min = "4.2.0"`。
 该文本用于ai传承
