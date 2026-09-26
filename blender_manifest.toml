@@ -1,14 +1,16 @@
 schema_version = "1.0.0"
 id = "hotkey_overlay"
-version = "1.5.0"
+version = "1.12.2"
 name = "Hotkey Overlay"
-tagline = "Realtime key & mouse display + customizable mode hotkey hint"
+tagline = "Screencast-Keys style key/mouse overlay + rich per-mode hotkey hints + draggable themed hint card"
 maintainer = "Custom"
 type = "add-on"
 blender_version_min = "4.2.0"
 license = ["GPL-3.0-only"]
 description = """
-Realtime key & mouse display + customizable mode hotkey hint, auto save config to blender user folder.
-Located in 3D View → N panel → HotkeyOverlay.
+Screen-Keys style real-time keyboard and mouse overlay in 3D Viewport.
+Rich per-mode hotkey hints (Object / Edit / Pose / Sculpt, 13+ lines each), always-visible persistent hint card + big center key/mouse capture card (Screen-Keys style).
+Auto-generate hints from your custom user keymap (click button to refresh).
+Auto-save config, import/export backup.
 """
 category = "3D View"

@@ -2,10 +2,10 @@
 bl_info = {
     "name": "Hotkey Overlay",
     "author": "Custom",
-    "version": (1, 5, 2),
+    "version": (1, 6, 0),
     "blender": (3, 6, 0),
     "location": "3D View → N面板 → HotkeyOverlay",
-    "description": "Realtime key & mouse display + customizable mode hotkey hint, auto save config to blender user folder",
+    "description": "Realtime key & mouse display, auto‑generate hints from user keymap, customizable hotkey hint",
     "category": "3D View",
 }
 import bpy
@@ -25,6 +25,113 @@ modal_operator_instance = None
 def get_auto_config_path():
     scripts_dir = bpy.utils.user_resource('SCRIPTS', create=True)
     return os.path.join(scripts_dir, "hotkey_overlay_config.json")
+
+# -------------------------- Keymap 映射表 idname → 中文说明（高频常用） --------------------------
+KEYMAP_OP_MAP = {
+    # 物体模式
+    "object.select_all": "A 全选 / 取消全选",
+    "transform.translate": "G 移动",
+    "transform.rotate": "R 旋转",
+    "transform.resize": "S 缩放",
+    "object.duplicate_move": "Shift+D 复制物体",
+    "object.delete": "X / Delete 删除物体",
+    "object.mode_set": "Tab 切换编辑模式",
+    "object.shade_smooth": "Shift+G 平滑着色",
+    "object.shade_flat": "Shift+F 平面着色",
+    # 编辑模式
+    "mesh.select_all": "A 点/边/面全选",
+    "transform.translate": "G 移动元素",
+    "transform.rotate": "R 旋转元素",
+    "transform.resize": "S 缩放元素",
+    "mesh.extrude_region_move": "E 挤出",
+    "mesh.edge_face_add": "F 填充面",
+    "mesh.bevel": "Ctrl+B 倒角",
+    "mesh.delete": "X 删除元素",
+    "object.mode_set": "Tab 返回物体模式",
+    "wm.context_set_enum": {"MESH_VERTEX": "1 点选择", "MESH_EDGE": "2 边选择", "MESH_FACE": "3 面选择"},
+    # 姿态模式
+    "pose.select_all": "A 骨骼全选",
+    "transform.translate": "G 移动骨骼",
+    "transform.rotate": "R 旋转骨骼",
+    "transform.resize": "S 缩放骨骼",
+    "anim.keyframe_insert": "I 插入关键帧",
+    "object.mode_set": "Tab 返回物体模式",
+    # 雕刻模式
+    "brush.size": "F 调整笔刷大小",
+    "sculpt.brush_stroke": "Shift 平滑笔刷",
+    "sculpt.brush_stroke": "Ctrl 向内雕刻",
+    "object.mode_set": "Tab 返回物体模式",
+}
+
+KEYMAP_CONTEXT_MAP = {
+    "OBJECT": "Object Mode",
+    "EDIT": "Mesh Edit",
+    "POSE": "Pose",
+    "SCULPT": "Sculpt"
+}
+
+def keymap_item_to_label(kmi):
+    """把keymap_item转为 修饰键+按键字符串"""
+    mods = []
+    if kmi.shift:
+        mods.append("Shift")
+    if kmi.ctrl:
+        mods.append("Ctrl")
+    if kmi.alt:
+        mods.append("Alt")
+    if kmi.oskey:
+        mods.append("Win")
+    key = kmi.name if kmi.name else kmi.type
+    if mods:
+        return " + ".join(mods) + " + " + key
+    return key
+
+def generate_hints_from_keymap(mode_name, settings):
+    """从系统keymap自动生成提示文本，填入对应mode的collection"""
+    target_coll = None
+    header_title = ""
+    if mode_name == "OBJECT":
+        target_coll = settings.object_hints
+        header_title = "【物体模式】自动生成"
+        km_context = "Object Mode"
+    elif mode_name == "EDIT":
+        target_coll = settings.edit_hints
+        header_title = "【编辑模式】自动生成"
+        km_context = "Mesh Edit"
+    elif mode_name == "POSE":
+        target_coll = settings.pose_hints
+        header_title = "【姿态模式】自动生成"
+        km_context = "Pose"
+    elif mode_name == "SCULPT":
+        target_coll = settings.sculpt_hints
+        header_title = "【雕刻模式】自动生成"
+        km_context = "Sculpt"
+    else:
+        return False
+
+    target_coll.clear()
+    item_head = target_coll.add()
+    item_head.text = header_title
+
+    wm = bpy.context.window_manager
+    keyconf = wm.keyconfigs.user
+    found_ops = set()
+    for km in keyconf.keymaps:
+        if km.name != km_context:
+            continue
+        for kmi in km.keymap_items:
+            if not kmi.active:
+                continue
+            op_id = kmi.idname
+            if op_id in KEYMAP_OP_MAP and op_id not in found_ops:
+                found_ops.add(op_id)
+                disp_text = KEYMAP_OP_MAP[op_id]
+                # 如果映射是dict（选择模式1/2/3）跳过，直接用内置文本
+                if isinstance(disp_text, dict):
+                    continue
+                line_item = target_coll.add()
+                line_item.text = disp_text
+    return True
 
 # ====================== 数据结构 ======================
 class HOTKEYOVERLAY_UL_HintItem(bpy.types.PropertyGroup):
@@ -177,10 +284,12 @@ def draw_rect(x, y, w, h, color):
     shader.uniform_float("color", color)
     batch.draw(shader)
 
-# ====================== 视口绘制 ======================
-def draw_callback_px():
+# ====================== 视口绘制【修复：增加region,rv3d参数】 ======================
+def draw_callback_px(region, rv3d):
     global display_text, display_time
     ctx = bpy.context
+    if ctx.space_data is None or ctx.space_data.type != 'VIEW_3D':
+        return
     settings = ctx.scene.hotkey_overlay_settings
     now = time.time()
     # 常驻快捷键提示
@@ -293,6 +402,21 @@ class HOTKEYOVERLAY_OT_StopCapture(bpy.types.Operator):
         if modal_operator_instance is not None:
             modal_operator_instance = None
             self.report({'INFO'}, "已停止输入捕获")
+        return {'FINISHED'}
+
+# -------------------------- 新增：从系统快捷键自动生成提示算子 --------------------------
+class HOTKEYOVERLAY_OT_AutoGenHintFromKeymap(bpy.types.Operator):
+    bl_idname = "hotkeyoverlay.autogen_hint_keymap"
+    bl_label = "从系统快捷键生成当前模式提示"
+    bl_description = "读取用户自定义键位，生成提示文本；修改快捷键后需要手动点此刷新"
+    def execute(self, context):
+        settings = context.scene.hotkey_overlay_settings
+        mode = settings.selected_mode
+        ok = generate_hints_from_keymap(mode, settings)
+        if ok:
+            self.report({'INFO'}, f"{mode}模式：已从系统快捷键自动生成提示")
+        else:
+            self.report({'ERROR'}, "生成失败")
         return {'FINISHED'}
 
 # ====================== 列表编辑操作 ======================
@@ -469,15 +593,17 @@ class HOTKEYOVERLAY_PT_Panel(bpy.types.Panel):
             "selected_hint_index",
         )
         row = box.row()
-        row.operator("hotkeyoverlay.add_hint_line", icon='ADD')
-        row.operator("hotkeyoverlay.remove_hint_line", icon='REMOVE')
-        row.operator("hotkeyoverlay.reset_hints", icon='FILE_REFRESH')
+        row.operator("hotkeyoverlay.add_hint_line", icon='PLUS')
+        row.operator("hotkeyoverlay.remove_hint_line", icon='TRASH')
+        row.operator("hotkeyoverlay.reset_hints", icon='RECOVER_LAST')
+        # 新增：从系统快捷键自动生成按钮
+        box.operator("hotkeyoverlay.autogen_hint_keymap", icon='KEYINGSET')
 
         box = layout.box()
         box.label(text="自动配置")
         row = box.row()
-        row.operator("hotkeyoverlay.save_auto_config", icon='SAVE')
-        row.operator("hotkeyoverlay.load_auto_config", icon='FILE_REFRESH')
+        row.operator("hotkeyoverlay.save_auto_config", icon='EXPORT')
+        row.operator("hotkeyoverlay.load_auto_config", icon='RECOVER_LAST')
 
         box = layout.box()
         box.label(text="备份 / 分享配置")
@@ -487,12 +613,14 @@ class HOTKEYOVERLAY_PT_Panel(bpy.types.Panel):
         row.operator("hotkeyoverlay.import_backup", icon='IMPORT')
 
 
+
 # ====================== 注册 / 注销 ======================
 classes = (
     HOTKEYOVERLAY_UL_HintItem,
     HotkeyOverlaySettings,
     HOTKEYOVERLAY_OT_CaptureInput,
     HOTKEYOVERLAY_OT_StopCapture,
+    HOTKEYOVERLAY_OT_AutoGenHintFromKeymap,
     HOTKEYOVERLAY_OT_AddHintLine,
     HOTKEYOVERLAY_OT_RemoveHintLine,
     HOTKEYOVERLAY_OT_ResetHints,
@@ -505,7 +633,6 @@ classes = (
 )
 
 def delayed_init():
-    # 延时执行：此时上下文已经完整，不再是RestrictContext
     context = bpy.context
     settings = context.scene.hotkey_overlay_settings
     auto_path = get_auto_config_path()
@@ -526,35 +653,27 @@ def delayed_start_modal():
     return None
 
 def _start_modal_on_load(dummy):
-    # 打开blend文件后延时启动模态
     bpy.app.timers.register(delayed_start_modal, first_interval=0.1, persistent=False)
 
 
 def register():
     global draw_handle
-    # 1. 注册所有类
     for cls in classes:
         try:
             bpy.utils.register_class(cls)
         except ValueError:
             pass
 
-    # 2. 注册Scene属性，只挂载属性，不读取scene内容！
     try:
         bpy.types.Scene.hotkey_overlay_settings = bpy.props.PointerProperty(type=HotkeyOverlaySettings)
     except Exception:
         pass
 
-    # =========【重点改动】=========
-    # 原来这里直接读取bpy.context.scene，扩展包安装阶段会RestrictContext报错
-    # 改成timer延时，等注册完成后再初始化配置
     bpy.app.timers.register(delayed_init, first_interval=0.2, persistent=False)
 
-    # 添加绘制句柄
     draw_handle = bpy.types.SpaceView3D.draw_handler_add(
         draw_callback_px, (), 'WINDOW', 'POST_PIXEL'
     )
-    # 添加load_post处理器
     if _start_modal_on_load not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(_start_modal_on_load)
 
